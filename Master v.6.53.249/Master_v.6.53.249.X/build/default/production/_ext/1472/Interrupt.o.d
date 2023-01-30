@@ -1,0 +1,20 @@
+build/default/production/_ext/1472/Interrupt.o:  \
+../Interrupt.c  \
+ ../HWSelection.h  \
+../DefinePeriferiche.h  \
+../FWSelection.h  \
+../usart.h  \
+ ../Driver_Comunicazione.h  \
+../Timer.h  \
+../Driver_ModBus.h  \
+ ../ProtocolloComunicazione.h  \
+../ProtocolloModBus.h  \
+../Driver_ModBus_U4.h  \
+ ../ProtocolloModBus_U4.h  \
+../Core.h  \
+../SevenSegDisplay.h  \
+../Interrupt.h  \
+ ../ADC.h  \
+../ServiceComunication.h  \
+../delay.h  \
+../ModBusCAN.h 

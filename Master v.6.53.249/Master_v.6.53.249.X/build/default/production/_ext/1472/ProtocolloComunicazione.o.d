@@ -1,0 +1,19 @@
+build/default/production/_ext/1472/ProtocolloComunicazione.o:  \
+ ../ProtocolloComunicazione.c  \
+../HWSelection.h  \
+../FWSelection.h  \
+ ../DefinePeriferiche.h  \
+../EEPROM.h  \
+../Timer.h  \
+../usart.h  \
+../ADC.h  \
+ ../DAC.h  \
+../Driver_Comunicazione.h  \
+../Driver_ModBus.h  \
+ ../ProtocolloComunicazione.h  \
+../ProtocolloModBus.h  \
+ ../Bridge2DataAddressMap.h  \
+../Core.h  \
+../delay.h  \
+../PID.h  \
+../ModBusCAN.h 

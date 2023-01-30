@@ -1,0 +1,1028 @@
+*******************************************************************************
+Firmware: Modulo Split 24
+Hardware: v3
+Micro controllore:	PIC24FJ256GB110A @ 8Mhz con PLL -> 48Mhz
+Revision history
+*******************************************************************************
+Revisione	Data
+- Modifiche
+*******************************************************************************
+Rev. 8.53.180  10/01/2023
+- Inserito controllo doppio Heater.
+
+Rev. 8.53.179  13/12/2022
+- Inserito blocco heater se temp. air out >60C e riarmo con air out <50C.
+- Inviato min-max set point scheda slave verso diagnostica pagina touch SetSplit. Ora se ne occupa la scheda e non
+  il touch screen così non ci sono problemi di errore nello script. Inserita anche possibilità in FwSelection.h
+  di cambiare dinamicamente Sp min, max e default attraverso "K_Lim_Custom_SP".
+- Inserito errore Gas Leaks verso touch screen. Viene letto da slave e inviato broadcast per slave n.1 con indirizzo della scheda in errore.
+  ATTENZIONE: DEVONO ESSERE INSERITI NEL DINAMICNAME.CSV COME ULTIME UNITà!!
+- Inserito nuovo tipo modulo on-off fan con ID10
+
+Rev. 8.52.178  10/11/2022
+- Inserite routine per dehumidificazione.
+
+Rev. 8.51.177  21/06/2022
+- Inserito controllo per Atex Fan
+- Inserito controllo umidità subslave media slave-sottoslave per future applicazioni di deumidificazione e per invio a master verso bridge.
+
+Rev. 8.51.176  02/09/2022 
+- Inserita gestione nuovo micro DA210. (18/07/2022)
+  Nel file "HWSelection.h" settare a 1 il K define DA210=1 e settare nel Progertto il Device = PIC24FJ256DA210 al posto del Device = PIC24FJ256GB210.
+
+Rev. 8.50.175  21/06/2022
+- Inserito controllo ventola "K_EBM_3200RPM_ModBus" e relativi controlli (anche in HWTest).
+- Inserito controllo heater su syxthsense.
+
+Rev. 8.50.174  02/05/2022
+- Sistemata apertura valvola limite bassa pressione liquido.
+Ora apre un po di più quando c'è l'unità spenta per far tornare il gas nel sistema.
+- Sistemato baco generato in versione 8.49.171 che forza la vel massima ventola == 3 con ecomode attivo.
+Succedeva che quando l'unità soddisfa il set point, la ventola si fermava.
+Questo perchè veniva fatto sempre else in modalità spento.
+- Sistemato controllo SyxthSense in Farhenheit con "k_Abil_Panel_Shared==1".
+C'era un baco che non impostava i limiti corretti minimo massimo di setpoint.
+
+Rev. 8.50.173  15/02/2022
+- Aggiunta selezione e gestione simultanea di Panel/SubSlave/InverterFAN su COM2/COM3 attraverso i flag (FWSelection.h):
+    #define K_Panel_On_Uart3                0   // Low  -> P Panel
+    #define K_ModBus_Generic_On_Uart3       0   // Mid  -> I Inverter
+    #define K_MyBus_On_Uart3                0   // Hi   -> S Subslave
+
+                                            //      SIP
+                                            //      -----------------------------------------------------------------------------
+                                            //      000     ALL COM2                        Test 2x30 min. = Error 0      *  OK
+                                            //      001     Panel COM3                      Test 2x30 min. = Error 0      *  OK
+                                            //      010     Inverter COM3                   Test 2x30 min. = Error 0      *  OK
+                                            //      011     Panel + Inverter COM3           Test 2x30 min. = Error 0      *  OK
+                                            //      100     Subslave COM3                   Test 2x30 min. = Error 0      ** OK
+                                            //      101     Subslave + Panel COM3           Test 2x30 min. = Error 0      ** OK
+                                            //      110     Subslave + Inverter COM3        Test 2x30 min. = Error 0      ** OK
+                                            //      111     ALL COM3                        Test 2x30 min. = Error 0      ** OK
+                                            //
+                                            //      *       Test di riprogrammazione Subslave via BUS su COM2 eseguito con successo 
+                                            //      **      Test di riprogrammazione Subslave via BUS su COM3 eseguito con successo 
+
+Rev. 8.50.172  16/12/2021 
+- Inserito invio "REG_SPLIT_WR_ECOMODE_STATUS" a sottoslave. è sato necessario per inviare eventuale off di zona o riduzione velocità ventola quando il sistema entra in Eco Mode.
+- Inserito #if(K_AbilFanInverter==0) in main.c riga 441. Serve se c'è inverter attivo su slave a far funzionare gli errori.
+
+Rev. 8.49.171  26/11/2021 
+- Inserita forzatura massima velocità ventola == 3 se EcoMode attivo.
+- Inserito flag "K_Force_Off_No_Proprity_Zone_Eco_Mode" che se == 1 spegne la zona con ecomode attivo (zona non prioritaria).
+- Modificata routine "TachoInterrupt()". Ora deve vedere almeno 3 impulsi sul TMR3 prima di assumere che la ventola gira. modificato perchè su alcune ventole
+  sembra che dia alcuni impulsi spuri e sembra stia girando la ventola quando in realtà non è così.
+
+Rev. 8.49.170  11/11/2021 
+- Aggiunta gestione nuovo sensore di pressione E+E ELEKTRONIK Mod. EE610-HV51A7 al posto del Premasgard 2121SD.
+- Modificata gestione COM3 (Modbus) con Panel shared in contemporanea con FAN MODBUS. Ora sposto le comunicazioni sulla COM3 SOLO se parlo con un pannello (flag "Me.ComToPanel" controllato in routine "Change_ProtocolBusSlave()"
+- Inserito controllo pompa loop se "K_LoopPumpEnable==1" in FwSelection.h. Abilita anche il relativo controllo del flusso.
+- Sistemato controllo heater.
+- Sistemata gestione pannello COM3 in collaudo. Ora nella fase di collaudo, se abilitate le comunicaizoni verso i pannelli su COM3, vengono gestiti lo stesso verso COM2 per non alterare il collaudo.
+
+Rev. 8.49.169  03/11/2021 
+- Sistemato controllo superheat dinamico se c'è temperatura di cabina inferiore a SetPoint.
+- Inserito controllo che ignora l'apertura della valvola con errori se la ventola è ferma, se il motore 1 o due è in funzione e se c'è temperatura gas o liquido < 5C.
+  Serve per evitare ghiaccio sulla batteria.
+- Inserito controllo di defrosting anche su tubo del gas e cambiati limiti/valori in accordo con Maurizio.
+- Cambiato tempo prima di check tacho a 30sec (era 10)
+- Cambiato tempo di check tacho in errore. orafa 5 min off, 30 sec on.
+
+Rev. 8.49.168  06/10/2021 
+- Aggiunto permanent offline su TouchScreen, SyxthSense e NetBuilding con relativa inizializzazione solo su probblema reale touch.
+- Aggiunto ricaricamento da EEPROM dei dati in check value range. ora ricarica i dati da default SOLO se non trova quelli corretti in EEPROM. Vale per parametri comuni alle cabine (SetP, VelFan, On-Off) .
+- Spostate SyncronizeData in NetBuilding e SyxthSense in RefreshInput. Prima erano in RefreshOutput (nel touch già apposto) e non ricaricava correttamente il checkvaluerange.
+- Impostato per NetBuilding limite fisso minimo a 18°C su valori limite da tastiera.
+
+Rev. 8.49.167  16/04/2021 
+- Inserito offset precaricato valvola per compensare zero. Il valore viene scaricato un tot alla volta quando la valvola dovrebbe essere a zero.
+  Appena qualcuno gli richiede di aprirsi, viene ricaricato l'offset. Permetterà alla valvola di aprirsi fino al vero 100%.
+----------ATTENZIONE: Va ancora testata su questa versione!!!! vedere se l'offet valvola va corretto durante collaudo!!
+- Aggiunta variabile "Me.TempAmbTouchVisual" calcolata in routine "TempAmbMidSel()" che serve per visualizzare sui dispositivi touch screen la variabile mediata
+  se c'è la modalità "K_Temp_Only_Slave" impostata nella media dello slave.
+- Inserita lettura umidità (se presente nello slave) da inviare al touch.
+- Corretto baco quando "k_Abil_Panel_Shared" abilitato. Ora il controllo di carattere arrivato e non destinato a me è fatto in _U2RXInterrupt().
+- Inserita nuova routine di collaudo compatibile con "Collaudo Scheda Slave Rev.M.xlsm". Ora è più snello e veloce.
+- Predisposte routine per trasformare "CheckValueRange" con lettura da eeprom prima di caricare default. Servirà a non reinizializzare dati in caso di lettura "anomala" dal pannellino, soprattutto con pannellino condiviso "k_Abil_Panel_Shared".
+  Inserito questo controllo per ora solo su syxthsense.
+
+Rev. 8.48.166  16/03/2021 
+- Aggiunto limite alta temperatura compressore impostabile da touch.
+
+Rev. 8.48.165  03/03/2021 
+- Inserito nuovo controllo valvola che fa 1Ms di movimento e 2 Ms stop. Questo per ridurre la temperatura sullo statore che causa la rottura della valvola. Nuovo duty di regolazione: 33%.
+- Inserita schedulazione letture AD sotto interrupt. rimangono in 20Ms, la differenza è che ora vengono lanciate le conversioni e ogni 2Ms ne viene estrapolata una. Modifica già fatta sul master
+  per ridurre il tempo dell'interrupt timer.
+
+Rev. 8.48.164  09/09/2020 
+- Aggiunta gestione Ventola Ziehl Abegg Modbus 
+- Aggiunto flag per gestire la comunicazione pannello su Com3 ("K_Panel_On_Uart3" in FWSelection.h).
+- Aggiunta gestione ventola su chiusura serrande.
+- Aggiunto controllo ventola su sensore pressione differenziale.
+- Corretto baco ProtocolloComunicazione.c (case REG_DIAG_SPLIT_WR_MAX_VENTIL_MODE:) c'era una correzione del limite che però se il limite massimo era superiore al valore della scheda,
+  quando cambiavi scheda inizializzava ad un valore caricato da eeprom (DiagnosticSplit.Ready_FanMode).
+- Aggiunta gestione pannellini SyxthSense (v.4.23 o successiva) in Fahrenheit. 
+  ATTENZIONE: per gestirli in Fahrenheit vanno inizializzati in tale modalità e sistemato il refresh display in slow.
+- Modificato comportamento valvola di espansione in start riscaldamento.
+  Prima era stato deciso che tutte le valvole, anche quelle delle zone spente, dovevano contribuire al superheat.
+  Ora invece se la zona è spenta, tiene chiusa la valvola. Eventualmente contribuisce aprendo per ripristinare gli errori di temperatura/pressione.
+- Inserito settaggio custom della corrente minima-massima ventole da Master se non è una 24V con lettura automatica da shunt.
+
+Rev. 8.48.163  18/08/2020 
+- Aggiunta possibilità di gestire velocità MyBUS a 250K Baud. con le schede slave (vedi comando "REG_SPLIT_SET_BAUDRATE" in ProtocolloComunicazione.c).
+
+Rev. 8.48.162  12/02/2020 
+- Inserito controllo SupeHeat motore in modalità freddo.
+- Inserito errore SuperHeat in modalità caldo.
+- Inserito controllo errori sonde di temperatura sui limiti e sulla sonda freezata (guasto sonda).
+- Abbandonato il Grande/Piccolo (introdotto da Eugenio DuMale come struttura principale di funzionamento slave) e sostituito con la porcata nel codice con il ArgoGas/ArgoLiquid.
+- Inserito controllo per apertura valvole LowPressure in caldo 2 bar prima di bassa pressione.
+- Sistemate routine "CheckIfTouchIsReady()" e "InitTouch()" perchè ogni tanto non inizializzava OnlyComunication.
+- Aggiunto OnlyComunication in ciclo programma quando l'unità è Master Slave.
+- Convertiti i Nop() in __builtin_nop(); per riuscirea compilare con pack compilatore 1.2.36.
+- Aggiunto "BloccaRegolaValveCaldo" quando riaccendo l'unità slave con già l'impianto in funzione per evitare l'apertutrarepentina della valvola di espansione.
+- Cambiati valori per il controllo della valvola di espansione su alta temperatura (K_Freddo_Valve_ViLimMin_TempHi....)
+- Aggiunto invio apertura minima valvola in caldo e freddo verso sottoslave.
+- Eliminato in invio cumulative alarm triangolo rosso se sono io l'unità in errore.
+- Sostituito in PWM.h #if per uta 65Hz con #elif. è più corretto.
+- Inserito controllo estrattore (solo con firmware compilato in only fan inverter o meno) in modalità automatica se arriva richiesta da parte del master. Fare riferimento a "Extractor".
+- Convertiti nomi nelle chiamate touch da "Add_TouchRoom" a "TouchAddres" per modificarlo dinamicamente in caso di cambio numero touch
+- Sistemati limiti routine "incrementa" e "decrementa" per evitare trillio in caso di valore in arrivo da direzione inversa della direzione del conto.
+- Inserito nuovo campo tracciatura versione "Model_FW_Version" che ritorna la tipologia di scheda compilata "SplitMode".
+- Sistemato in routine "CheckUtaModeValue()" Invio del parametro quando touch online. Per sbaglio era "Syncronize.DefMode" e non "Syncronize.Uta_Mode".
+- Sistemata gestione del Flag di doppio compressore "EngineBox.DoubleCompressorOn" per nuova aggiunta nel secondo bit con doppio comrpessore ma su stesso inverter.
+  Ora controllo sempre solo Bit 1.
+- Inserito flag "K_Channel_Gas_Regulation" che abilita il funzionamento della ventola in Only Fan da canale pressione gas.
+- Inserito flag "K_Channel_Liquid_Light" che abilita il controllo della luce da canale pressione liquido.
+
+Rev. 8.47.161  10/02/2020 
+- Inserito nuovo define "k_Abil_Panel_Shared" in FWSelection.h per abilitare la condivisione del pannellino a due Slave su Bus diversi (per rindondanza schede).
+  Inserita relativa logica di controllo che azzittisce il Bus quando sente che c'è stata una richiesta sul Bus secondario da un'altro slave temporizzata e basata sul System Cycle.
+- Risolto baco Trigger Init fuori range. Inserito CheckValueRange del trig init e scartato valore se maggiore di quello richiesto.
+  Per qualche motivo ogni tanto arrivava un valore furoi range interrompendo la sinccronizzazione delle cabine collegate al bus fino a che veniva fatta una nuova pressione di trig init valida.
+- Aggiunto in "FWSelection.h" nuovo switch "K_Force_DigiIn1_Ventil" che abilita la ventola quando l'unità è in solo ventilazione con ingresso 1 (di solito per fare da estrattore bagni).
+- Eliminato in routine "SyncronizeData..." quando Flag data ready a zero che se non era presente un dispositivo, portava a 0 flag "ReadyData".
+  Ora il passaggio dati è nettamente più reattivo.
+
+Rev. 8.47.160  08/11/2019 
+- Inseriti registri Night Control su NetBuilding per spegnere retroilluminazione anche su fasce notturne. (Reg.60,61,62)
+- Inserito switch "K_New_NetB" in "FWSelection.h" per eliminare istruzioni che danno fastidio ai pannelli NetBuilding con FW Obsoleto.
+- Inseriti parametri in Fw Selection per togliere parametri TestAll su UTA.
+- Inserito controllo sensore allagamento con "K_Abil_Flood_Alarm" abilitabile da FW Selection econtollato da "iDigiIn1".
+- Inserito funzionamento ventola UTA anche se in modalità riscaldamento sempre funzionante.
+- Cambiata isteresi funzionamento UTA a 2°C.
+- Inserito funzionamento UTA sottoslave.
+- Inserita gestione ventilazione UTA e Only Fan che ventolano lo stesso anche se test di flusso attivo.
+- Inserito Switch "RecheckReadTouch" in routine "RecheckDataReadTouch()" che disabilita il Recheck del dato touch perchè sistemato
+  probabilmente il baco del touch che ritornava in alcune circostanze Zero è stato sistemato con DRV 2.10 editor 2.8.1.
+- Eliminata modifica tentata in ver. 8.45.156. A volte non caricava i dati corretti.
+- Sistemato baco minima apertura valvola in freddo. 
+  Quando si reinizializzava partiva da valore sbagliato.
+- Sistemato baco limiti massimi valvola freddo. 
+  Ora limito tra i valori consentiti di freddo e non tra i limiti di min/max della valvola.
+- Corretto baco in funzione "Send_WaitModRxSec" (ProtocolloModBusSec.c) dove mancava l'azzeramento del flag "Mod_LastRxSec.Valid_Data".
+- Corretto baco in funzione "Send_WaitRxSec" (ProtocolloComunicazioneSec.c) dove mancava l'azzeramento del flag "LastRxSec.Valid_Data" (corretto anche se routine non utilizzata).
+- Corretto baco nella funzione "Process_Cmd()" (in ProtocolloComunicazione.c) aggiungendo la funzione "ResetComFlags()" che resetta oltre al flag "LastRx.Valid_Data" anche 
+  il timer di Comunication Lost "TmrLastRequest".
+- Eliminati alcuni errori cumulativi superflui relativi allo slave in "EngineBox.Errori1" per fare spazio ad altri errori permanenti.
+- Aggiunto comando MyBUS per ricezione valore ERRORE PID del Master per gestione valvola in Caldo per poter tarare meglio i parametri PID.
+- Sistemato baco in routine "SearchModbusDeviceIndex" (ProtocolloModbusSec.c): Aggiunto flag "SearchModbusDeviceIndex" per non far generare errori di timeout (4 lampeggi led Rosso)
+  quando si cerca dispositivo Modbus.
+- Aggiunto nuovo errore Valvola di inversione rotta su errori persistenti 2 ed inviato verso touch.
+- Aggiunti nuovi parametri per Maintenance Request da e verso touch.
+
+Rev. 8.46.159  07/11/2019 
+- Aggiunti parametri PID caldo e freddo verso master per taratura da touch.
+
+Rev. 8.45.158  15/10/2019 
+- Inserita gestione di forzatura sottoslave su modalità solo ventilazione.
+
+Rev. 8.45.157  15/07/2019 
+- Implementata lettura doppia sui dati letti da touch (prima di aggiornare con Syncronize e CheckRange) come tentativo di risolvere il baco dei touch Exor che ogni tanto rispondono erroneamente uno zero al posto 
+del valore reale (vedi ON/OFF, SetPoint, VelFAN, SystemOFF etc...).
+- Tolto in PWM.C righe 375-377 comportamento della ventola che andava a velocità 2 se c'erano errori GasRecovery o compressorLo o condensatoreLo.
+- Sistemata logica On Timed - Always On valvola in caso di freezer presente (righe 1722-1733 core.c). Ora segue percentuale massima valvola in tutti e due i casi 
+  e la posso mettere al massimo con valvola 100%.
+
+Rev. 8.45.156  11/07/2019 
+- Risolto baco di sincronizzazione dati con Touch (On/Off e SetPoint, etc...) su cambio pagina unità veloce.
+
+Rev. 8.44.155  31/05/2019 
+- Aggiunto comando MyBUS per lettura "Me.MaxFanVentil_Mode" dal Master.
+
+Rev. 8.43.154  31/05/2019 
+- Inserito controllo di sottoslave quando unità è in UTA (non inverter).
+- Inserito controllo sottoslave UTA solo ventilazione con velocità variabile e impostabile da K in FWselection.
+
+Rev. 8.43.153  24/05/2019 
+- Aggiunto registro MODBUS (REG_TOUCH_SPLIT_FROZEN_MODE) verso touch con valore FrozenMode per indicare su touch se l'unità è Frigo/Freezer o Slave normale.
+- Inibito aggiornamento valori touch da "trig_init" se slave = FRIGO o FREEZER
+
+Rev. 8.42.152  24/05/2019 
+- Aggiunto switch "K_Evaporator_FAN" in FWSelection per azionare uscita digitale "oDigitEvapFan" solo se si è Frigo o Frezeer e con unità accesa.
+
+Rev. 8.42.151  23/05/2019 
+- Sistemata ricerca di dispositivi collegati (Touch, o pannellini Net o Syxth).
+- Sistemato baco in ricerca dispositivi che provocava un aumento dei tempi di ciclo di 600mS.
+
+Rev. 8.42.150  22/05/2019 
+- Aggiunta gestione di errore Frigo - Freezer non temperatura dopo mezz'ora di funzionamento.
+- Inserito defrost frigo.
+
+Rev. 8.41.149  07/05/2019 
+- 
+
+Rev. 8.40.148  06/05/2019 
+- Inserita uscita per valvola On-Off sicurezza tubo Gas quando sei in modalità frigo - freezer.
+
+Rev. 8.40.147  06/05/2019 
+- Se frigo o freezer forzato funzionamento in CoreRaffrescamento.
+- Inserito assorbimento resistenza di defrosting su freezer.
+
+Rev. 8.40.146  05/04/2019 
+- Aggiunta gestione Frigo/Freezer.
+
+Rev. 8.39.145 04/01/2019
+- Aggiunta gestione Autobaud touch e autoriconoscimento dispositivi collegati allo Slave.
+
+
+Rev. 8.39.144 18/12/2018 
+- Aggiunta gestione parametri REG_TOUCH_SUPERHEAT_SP, REG_TOUCH_WORK_TEMP, REG_TOUCH_WORK_PRESS, REG_TOUCH_MAX_OPEN_VALVE (Sia per caldo che per freddo)
+
+Rev. 8.38.143 19/11/2018 
+- Aggiunta gestione di limitazione % potenza ventole (Solo per quelle piccole a pale rovesce) con parametro ricevuto da Master. 
+- Aggiornata routine "UpdatePID" con parametro che specifica la direzione dell'uscita rispetto all'errore. -> "K_DirectionPositive" (Default) e "K_DirectionNegative"
+
+Rev. 8.37.142 09/11/2018 
+- Ricevuti registri da 770 a 773 da master contenenti valori di alta-bassa pressione per aggiustare in automatico l'apertura delle valvole.
+
+Rev. 8.36.141 09/11/2018 
+- Risolto baco di reset Fault FANStuk che impediva il reset premendo "clearError" sul touch.
+- Cambiato metodo di ripresa ventola con errore FANStuk. Ora in caso di Fault si azzera il valore PWM per 180 Sec.
+  e si ripristina per 15Sec. Questo per evitare di scaldare la ventola nel caso di ostruzioni meccaniche delle pale.
+
+Rev. 8.36.140 07/11/2018 
+- Sistemato controllo limiti di "ValveCounter" in Core.c in caldo.
+- Sistemato valore di Default "Touch[0].FanMode" nel caso di Touch, SyxthSense o NetBuilding.
+- Sistemato comportamento ventole in fase di SystemRestart. Ora stanno ferme.
+
+
+Rev. 8.36.139 25/10/2018 
+- Aggiunta gestione dei flags di Enable, OnLine, OffLine e Alarm per i "Device" Modbus collegati alle schede Slave (Touch, NetBuilding, Systsense), con la stessa
+  logica di gestione degli stessi flags per gli Slave.
+
+Rev. 8.35.138 22/10/2018 
+- Implementazione di attesa intelligente dello stato "Ready To Go" del Touch (i Carel hanno spesso questo problema) in modo da cominciare a inizializzarlo e a comunicarci 
+  solo dopo che è "pronto" a ricevere i dati (vedi routine "CheckIfTouchIsReady()").
+  Sembra infatti che a volte cominci a comunicare con la scheda slave ma non sia pronto a ricevere e quindi scrivere correttamente i dati, questo provoca una rilettura errata 
+  dei valori di inizializzazione e di conseguenza un ripristino dei valori di default.
+
+Rev. 8.35.137 19/10/2018 
+- Risolto Baco di impallamento EEPROM che si poteva verificare durante una disalimentazione/rialimentazione o un reset della scheda durante una fase di lettura/scrittura
+  della EEPROM che poteva rimanere "incastrata" in un ciclo di risposta con la conseguente impossibilità da parte del micro di poterci comunicare. 
+ (Main.c vedi inizializzazione del port E PIN RE6 -> SCL).
+
+Rev. 8.35.136 11/10/2018 
+- Aggiunta gestione conversione A/D corrente FAN.
+- Aggiunto calcolo e filtraggio valore potenza FAN (Me.FanPower).
+- Aumentato numero di campioni per media conversioni analogiche da 6 a 32.
+- Spostata routine di conversione "AD_Read()" da ciclo main a interrupt di Timer1 ed eseguita ogni 20mS.
+- 
+
+Rev. 8.34.135 09/10/2018 
+- Aggiunte Routine Check Value Range per Net Building e Sixth Sense separate per una miglior ottimizzazione della correzione del valore.
+- Aggiunta copia del vaore Value Range quando corregge se non è online nessun tipo di dispositivo.
+
+Rev. 8.34.134 24/09/2018 
+- Sistemato baco di gestione accensione sottoslave se montato pannellino NetBuilding ("SyncronizeDataOnOff_NetB").
+
+Rev. 8.34.133 20/09/2018 
+- Inserito controllo alta e bassa temperatura su pressione condensatore se presente.
+
+Rev. 8.33.132 22/08/2018 
+- Inseriti nuovi parametri per pannellino NetBuilding. 
+    - Inserita la temperatura "Me.TempAmbRealSelection" per visualizzarla sul pannello tramite registro "REG_NETB_REMOTE_TEMPERATURE".
+    - Inserita luminosità LCD variabile tramite registro "REG_NETB_LCD_INTENS" (arriva da master se modificato da default)
+    - Inserita scrittura stagione su registro "COIL_NetB_SEASON"
+- Risolto baco in routine di collaudo "CheckFanSpeed()" che incrementava erroneamente l'indice di velocità PWM fino a 9 invece che 8.
+
+Rev. 8.33.131 20/08/2018 
+-
+
+Rev. 8.32.130 18/08/2018 
+- Spostato indirizzo CRC Hi e Lo in loc. 0xFC e 0xFD per far spazio a nuove locazioni da memorizzare (vedi sotto).
+- Inserita e gestita priorità con settaggi da Touch.
+
+Rev. 8.31.129 16/08/2018 
+- Cambiato calcolo SUperHeat in Main.c. Ora è superheat puro.
+- Cambiati limiti K_Freddo_Valve_ViLimMin_Liq_PressHi e K_Freddo_Valve_ViLimMax_Liq_PressHi.
+- Cambiato valore K_Lim_Max_Press_Correct_Valve. Ora è = a K_Freddo_Valve_ViLimMin_Liq_PressHi.
+- Aggiunti switch in FWSelection: 
+        K_ValveOnDemand_Max_Escursion_100P  1   //Se abilitato l'escursione in limitazione va da 0 a 100% anche se la valvola è limitata
+        K_ValveOnDemand_Min_Percent_On      0   //Se abilitato l'escursione in limitazione quando la valvola dovrebbe esssere chiusa va da 0 a K_ValveOnDemand_Min_Percent_Val%
+
+Rev. 8.31.128 23/07/2018 
+- Ripristinato tempo di reinizializzazione valvola in freddo a 120 sec. (K_TimeRestartValve).
+
+Rev. 8.31.127 17/07/2018 
+- Cambiato tempo di reinizializzazione valvola in freddo a 2 sec. (K_TimeRestartValve).
+
+Rev. 8.31.126 13/07/2018 
+- Aggiunta gestione ingresso digitale n.3 (iDigiIn3), come comando parallelo per la funzione di SystemOff (flag "K_Abil_DigIn_SystemDisable" in FWSelection.h).
+
+Rev. 8.31.125 13/07/2018 
+- Modificata isteresi di accensione/spegnimento unità in condizionamento.
+- Separata media per accensione/spegnimento slave tra caldo e freddo (funzione "TempAmbMidSel()") e inseriti relativi comandi provenienti da FWSelectione del Master.
+- Rivista logica di gestione della velocità automatica FAN slave. Ora non è più a scalini ma genera un valore con una curva linearizzata.
+- Corretto baco in funzione "DinamicSuperHeatCold()"
+
+Rev. 8.31.124 03/07/2018 
+- Modificata isteresi di accensione/spegnimento unità in condizionamento.
+- Separata media per accensione/spegnimento slave tra caldo e freddo (funzione "TempAmbMidSel()") e inseriti relativi comandi provenienti da FWSelectione del Master.
+- Rivista logica di gestione della velocità automatica FAN slave. Ora non è più a scalini ma genera un valore con una curva linearizzata.
+
+Rev. 8.30.125 BETA 21/06/2018 
+- Eseguito Merge v8.30.122 (Modifiche Valvola Simone) e v8.29.123 BETA (Modifiche EEPROM e lampeggi LED rosso Gianluca)
+- Risolto baco di ricezione comando in broadcast che in alcuni casi faceva in modo di interpretare il dato del comando precedente.
+  Soluzione: ripristinato innterpretazione comando MyBUS e MODBUS da interrupt "Timer1" a "RxUART1".
+- Eliminato da routine "CopyBuffer" e "Mod_CopyBuffer" la copia del flag "ValidData".
+- Corretta la definizione dei parametri passati alla routine "PutData" e "GetData" da "int" a "volatile int".
+
+Rev. 8.30.123 28/06/2018 
+- Risolto baco di ricezione comando in broadcast che in alcuni casi faceva in modo di interpretare il dato del comando precedente.
+  Soluzione: ripristinato innterpretazione comando MyBUS e MODBUS da interrupt "Timer1" a "RxUART1".
+- Eliminato da routine "CopyBuffer" e "Mod_CopyBuffer" la copia del flag "ValidData".
+- Corretta la definizione dei parametri passati alla routine "PutData" e "GetData" da "int" a "volatile int".
+
+Rev. 8.29.123 BETA 20/06/2018 
+- Aggiunto doppio salvataggio dati EEPROM per avere sicurezza di non perdere dati nell'eventualità che la scheda venga spenta nel mentre di un aggiornamento EEPROM (dato o CRC).
+
+Rev. 8.29.122 29/05/2018 
+- Eliminazioni di locazioni obsolete e ottimizzazioni varie sullo spazio EEPROM.
+- Modificata gestione LED Rosso di allarme.
+  Ora è gestito secondo un codice di lampeggi: 
+
+            1 = U1_MyBUS (Errori comunicazione su UART1 Protocollo MyBUS)
+            2 = U2_MyBUS (Errori comunicazione su UART2 Protocollo MyBUS)
+            3 = U1_ModBUS (Errori comunicazione su UART1 Protocollo ModBUS)
+            4 = U2_ModBUS (Errori comunicazione su UART2 Protocollo ModBUS)
+            5 = CumulativeAlarm (EEV_Open, EEV_Close, BatteriaGhiacciata, Fan_Fault, Fan_OverLoad, FireAlarm, Split_Flags_Alarm_xx, Split_Flags_EnableAndOffline_xx)
+            6 = EEPROM Fault (EEPROM_Retention, EEPROM_ReadWrite, EEPROM_Cell)
+
+
+  Se sono presenti più allarmi i lampeggi si susseguono fino all' autoripristino o all'eliminazione dell'allarme.
+  Ogni lampeggio è seguito da una pausa di 2 sec.
+
+
+
+Rev. 8.29.121 17/05/2018 
+- Inserita inizializzazione velocità max slave in base a tipo di dispositivo collegato.
+- Inserita inizializzazione in modalità ventilazione se non c'è selezionata la modalità.
+- Inserito controllo in arrivo Me.DefMode che se non è nelle modalità previste, lo rifiuto.
+
+Rev. 8.29.120 09/05/2018 
+- Agginta gestione media temperatura ambiente selezionabile tra: Solo Slave, Slave + Sottoslave, Slave + Sottoslave + Pannellino, Solo Pannellino.
+
+Rev. 8.29.119 08/05/2018 
+- Aggiunta correzione SuperHeat per scaldare aria uscita per evitare condensa tubi.
+
+Rev. 8.28.118 08/05/2018 
+- Migliorata routine "SyncronizeDataNew".
+
+Rev. 8.28.117 04/05/2018 
+- Aggiunta gestione pannello SyxthSense e rinominate routine "Panel" (NetBuilding) in "NetB".
+
+Rev. 8.28.116 03/05/2018 
+- Aggiunte modifiche di gestione flag OnLine su Panel NetBuilding e aggiunte ottimizzazioni routine per Panel.
+
+Rev. 8.28.115 24/04/2018 
+- Aggiunta gestione Defrosting split.
+
+Rev. 8.28.114 13/04/2018 
+- Aggiunta lettura revisione FW da pannelli Netbuilding.
+- Sistemati alcuni bachetti nelle routine di lettura dati touch (RefreshTouchInPut).
+
+Rev. 8.28.113 05/04/2018 
+- Tolta correzione valvola oer bassa temperatura al -20%
+Rev. 8.28.112 26/03/2018 
+- Aggiunta gestione allarme di Defrosting proveniente dal Master.
+
+Rev. 8.27.111 26/03/2018 
+- Risolto baco in Driver_ComunicazioneSec.c nella routine "IntReadBusSec()" dove veniva usato erroneamente il registro di ricezione per fare un
+  confronto sul contenuto. Questo provocava (solo a 115200 Baud) occasionalmente la perdita della risposta di un Subslave.
+
+Rev. 8.27.110 16/03/2018 
+- Sistemata routine di "Test_HW" per eseguire una corretta fase di collaudo utilizzando PLX-DAQ per il monitoraggio dei vari passi.
+- Spostati tutti gli azzeramenti del flag di interrupt (interrupt.c) dalla fine funzione all'inizio.
+  Questo risolve alcuni problemi che si potevano verificare con scatti di interrupt contemporanei.
+
+Rev. 8.27.109 10/03/2018 
+- Aggiunto switch in FWSelection "K_ValveNoPressCondenser" che consente di abilitare o meno la nuova gestione valvola in caldo piuttosto che ripristinare la vecchia.
+
+Rev. 8.27.108 09/03/2018 
+- 
+
+Rev. 8.26.107 08/03/2018 
+- 
+
+Rev. 8.25.106 02/03/2018 
+- Impementata nuova gestione in caldo.
+- Aggiunti comandi MyBUS "REG_SPLIT_ENGBOX_SUPERH_HEATCALC" e "REG_SPLIT_ENGBOX_PRESSW_HEATCALC" per nuova gestione valvola in caldo.
+- Corretto baco in "Driver_Modbus.c" (-> Mod_IntTimeOutRx).
+  Aggiunta eccezzione sul conteggio contatore dell'errore intercarattere (ModTimeOutInterCharComErr) per evitare conteggi errati  
+  sulle risposte in lettura (ReadModCmd) delle altre periferiche (Touch e altri subslave) perchè di lunghezza diversa rispetto 
+  ad una domanda dello Slave (vedi "Mod_IntReadBus"). 
+  Quindi ora si incrementa il contatore solo se il pacchetto era destinato a me.
+- Create define Wait e Retry per messaggi di check Modbus (MaxModChkSubWaitSec e MaxModChkSubRetriesSec).
+- Aggiunto nuovo comando MyBUS "REG_SPLIT_ENGBOX_ALL_VALVEOPEN100P" che riceve dal Master un flag (che si attiva con DIPSW n.8 ON sul Master) per spalancare le valvole al 100% (quando si carica il GAS nell'impianto).
+
+
+Rev. 8.25.105 01/03/2018 
+- Implementata gestione doppio protocollo MyBUS/MODBUS su UART2 per avere comunicazione omogenea in MODBUS verso SubSlave con touch Exor che ha dei problemi se si usa MyBUS .
+
+Rev. 8.25.104 26/02/2018 
+- Spostati tutti gli azzeramenti del flag di interrupt in fondo alla relativa funzione.
+- Spostate le funzioni di interpretazione messaggio (sia ModBUS che MyBUS) dall'interno dell'interrupt di RX all'interrupt del Timer1:
+  (Process_Cmd(&LastRx), Recive_Cmd_Sec(&BufferRxSec, &LastRxSec),Mod_Recive_CmdSec()).    
+  Questo per eliminare qualche timeout di comunicazione che si poteva verificava sul Master per via della perdita di ricezione degli ultimi byte del messaggio da parte dello slave
+  che era impegnato a rispondere al touch evantualmente collegato.
+  Ora le routine di interrupt di ricezione (sia UART1 che UART2) sono molto veloci e si occupano solo della ricezione e memorizzazione del byte nell'apposito buffer e la successiva eventuale
+  validazione e risposta è fatta sotto interrupt Timer1.
+- Spostate tutte le routine di interrupt in nuovo file sorgente "Interrupt.c" (creato ma non necessario ora, anche Interrupt.h).
+
+Rev. 8.25.103 22/02/2018 
+- Inserito Define In FW Selection (SplitMode==5) che fa Only Fan ma con ventilatore normale (non inverter).
+- Inserita modalità riscaldatore sia su Slave che Sottoslave attivabile da FWSelection (K_Heater_Abil).
+- Risolto baco di accensione in freddo su function mode che accendeva su temperatura reale slave e spegneva su temperatura mediata. 
+  Ora accende e spegne su temperatura mediata.
+- Corretta la velocità di 115000 Baud a 115200 (standard) su UART2 e portata quella della UART1 a 125000 (per protocollo MyBUS) che consente di avere error rate = 0%.
+- Corretto baco in routine "Change_ProtocolBusSlave" (ProtocolloComunicazione.c). 
+  Mancava la memorizzazione di LastProtocol (LastProtocol = ProtocolIndex) che era presente solo nel "case0" ma mancava in tutti gli altri.
+- In routine "PutDataForUART3" eliminata sezione di lettura parametro da Excel perchè pare dia problemi sull'invio dei dati verso Excel.
+- Aumentata velocità invio dati verso Excel da 57600 a 115200 Bps.
+
+
+Rev. 8.25.102 21/02/2018 
+- Inserito define in FWSelection che blocca limite massimo di funzionamento se attivato (valore impostato da FWSelection).
+
+Rev. 8.25.101 07/02/2018 
+- Modificate routine di comunicazione MyBus (UART2 -> Sec) verso unità SubSlave in modo da poter utilizzare anche il protocollo ModBUS.
+- Eliminato baco in routine di calcolo CRC in protocollo ModBUS "Mod_BaseCRC16Sec" che utilizzava non correttamente un puntatore.
+  Ora si passa la variabile e non un puntatore come nella routine gemella per ul protocollo MyBUS "GenerateCRC".
+- Uniformato flag "SystemDisable" a "DefMode" per gestione più corretta
+- Creata routine "SyncronizeDataBridge()" per aggiornamento parametri globali da bridge.
+- Risolto baco in routine di calcolo CRC MyBUS che utilizzava erroneamente il valore delle variabili passate come puntatore (QUESTO DA SEMPRE!!!!)
+  Allineata anche routine di CRC del MODBUS per simmetria (anche se questa era già stata sistemata alcune versioni fa in altro modo).
+- Aggiunta pausa (k_WaitSendMessage) in protocollo MyBUS tra le letture/scritture verso i subslave (FuncReadReg_Sec, FuncWriteReg_Sec) per garantire una minima distanza tra un Tx e il successivo 	
+  per evitare possibili timeout degli subslave che non fanno in tempo a completare la lettura/scrittura prima della successiva.	                        
+- Risolto baco in funzione "Reinit_DataSplitToTouch" (ProtocolloModBusSec.c) dove la variabile "Trig" non era inizializzata ma utilizzata per fare confronti!
+
+Rev. 8.25.100 06/02/2018 
+- Risolti vari Warning di compilazione.
+
+Rev. 8.25.99 01/02/2018 
+- Eliminata funzione di invio Broadcast su canale UART Sec "Write_brc_Cmd_Sec" perchè identica alla "Write_Cmd_Sec" tranne il parametro Address che diventa "k_Broadcast_Addr".
+- Eliminata funzione di invio su canale UART Sec "Send_WaitRx_Sec" perchè identica alla "Send_WriteReg_Sec" tranne il parametro Comando che che ora viene passato anche alla "Send_WriteReg_Sec".
+- Creata funzione "FuncCheckReg_Sec" per check presenza SUbSlave.
+
+Rev. 8.25.98 29/01/2018 
+- Intergrato cambio di protocollo/baud direttamente nelle funzioni che le utilizzano.
+- Sistemata routine di cambio protocollo/Baud in modo da non effettuare il cambio di protocollo e/o baud se si è già in quella modalità.
+- Sistemati bachi minori.
+- Risolti vari Warning di compilazione.
+
+Rev. 8.25.97 12/01/2018 
+- Implementate diverse modifiche/aggiunte sulla gestione della logica Valvola.
+- Modificato comando per check presenza SubSlave in routine "CheckHotPlugSlave_Sec" da "Chek" a "ReadReg" per ovviare ad un probabile baco nei Touch EXOR che
+  li manderebbe in "crisi" quando ricevono pacchetti estranei al prtocollo MODBUS.
+- Creata routine ("ValueIn2ValueOut" -> Core.c) che scalatura una variabile in ingresso (Vin) con i suoi range Min/Max con una in uscita con i Suoi Min/Max. 
+
+Rev. 8.24.96 08/01/2018 
+- Cambiato sistema di passaggio buffer in funzione "GenerateCRC" come nelle altre funzioni che usano passaggio di puntatore a buffer.
+- Sistemata gestione ventola della v.8.23.93
+- Sistemato baco sottoslave 
+- Aumentato tempo di attesa tra comandi in "Send_WaitModRx" e "Send_WriteModReg" (ProtocolloModBus.c) da 1mS a 1100uS per sicurezza.
+
+Rev. 8.24.95 05/01/2018 
+- Aggiunti comandi MyBUS per gestione programmazione da Bootloader DS30 (SlaveAutoreset e SubSlaveAutoreset).
+
+Rev. 8.23.94 31/12/2017 
+- Aggiunta gestione UART3 per utilizzo come debug con l'apposito palchetto adattatore "DualRS485Expander Rev.A"
+  Vedi documentazione "PLX-DAQ" per EXCEL.
+- Aggiunto modulo FW "ServiceComunication.c" e relativo .h per la gestione del protocolli su UART3 (per ora PLX-DAQ)
+
+Rev. 8.23.93 29/12/2017 
+- Cambiati i tempi di default per la ventola quando in standby: 30sec. ON e 1.5min. OFF. 
+- Modificata gestione ventola in modo che vada OFF solo quando la valvola è a zero e il(i) compressori sono fermi e non aspetta che la pompa sia ferma.
+
+Rev. 8.23.92 15/12/2017 
+- Sistemato baco di gestione valvola in routine di test HW_Test() (main.c).
+  Ora la valvola esegue correttamente i cicli aperto/chiuso con pause di 5Sec. in condizioni "tutta aperta" e 50sec. in condizioni "tutta chiusa"
+- Aggiunta routine per il ripescaggio a caldo dei touch.
+- Eliminato case "EngineBox_CriticalFault" in RegolaValvola():
+  Ora gli errori non aprono più le valvole ma le chiudono completamente.
+- Sistemata routine RegolaValvola in caldo e con errori. COrretti alcuni bachi per il movimento della valvola corretto.
+- Ripristinate soglie velocità PWM più alte per night e vel.1. Probabilmente causa fanstuck perchè troppo bassa.
+
+Rev. 8.23.91 14/12/2017 
+- Sistemato baco di gestione valvola che la faceva inchiodare al 20%.
+
+Rev. 8.23.90 12/12/2017 
+- Aggiunta gestione canali A/D n.5 e 6.
+- Aumentato tempo di attesa Touch alla partenza ("TimerStartUp.Time") da 50 a 60sec. perchè i nuovi touch sembrano metterci più tempo a "svegliarsi" all'accensione.
+
+Rev. 8.23.89 07/12/2017 
+- Inserita modalità Split==4 (Regolazioni manuali da commutatore collegato su DigIng1 e DigIng2 (tipo Cookpit)).
+- Aggiunti comandi per la ricezione dei valori di gestione valvola (e altre personalizzazioni) da parte del Master: Ora si possono personalizzare indicandoli nel FWSelection.h del Master.
+  Inviati gli stessi parametri anche ai sottoslave.
+
+Rev. 8.22.88 06/12/2017 
+- Modificata gestione valvola in Caldo. Per ora non segue il SuperHeat perchè manca la terza sonda pressione sul Master. Verrà ripristinata con il porting sul Master HW v5.0.
+- Modificate routine "TachoInterrupt" -> (PWM.c) per un più coerente calcolo della velocità ventola e come probabile risoluzione del baco che ogni tanto (solo su Tania e Zulu) 
+  spegne e accende la ventola. 
+- Modificata gestione ventola in caldo in modo che quando il SetPoint è soddisfatto uesta gira per 30 sec. e si ferma per 3 min. all'infinito fino a che SetPoint non torna NON soddisfatto.
+
+Rev. 8.22.87 22/11/2017 
+- Modifiche varie per gestione FAN. 
+- Eliminata gestione Me.FunctionMode autonoma per sottosplit che copiava esattamente il funzionamento dello split principale.
+
+Rev. 8.22.86 06/11/2017 
+- Modificato su UART2 il sistema di invio comando anche per il protocollo MyBUS come già fatto per il ModBUS in ver.85.
+- Diminuito tempo di Timeout per comando di Check (MaxModChkWait) da 400mS a 100mS sul protocollo ModBus e da 200mS a 100mS 
+  sul protocollo MyBus (MaxChkWait.)
+- Diminuito tempo di Timeout da 500mS a 100mS sul protocollo ModBus sui comandi di Read (MaxModReadWait) e Write (MaxModWriteWait). 
+- Aggiunti contatori errori comunicazione protocollo MyBUS su UART2.
+- Modificata routine di Interrupt RX UART2 (Main.c) -> "_U2TXInterrupt" per gestire correttamente il segnale RTS. 
+  Prima poteva capitare che quest'ultimo non veniva abbassato in tempo prima che il device (es. Touch o Sottoslave) rispondesse allo slave mentre era in atto una risposta dello slave verso il master. 
+- Corretta routine "CheckModuli_Sec" (ProtocolloComunicazioneSec.c) dove la ricerca dei sottoslave partiva per errore dall'indirizzo 0 anziche 1.
+
+Rev. 8.22.85 28/10/2017 
+- Modificato su UART2 sistema di invio comando con protocollo ModBus per evitare possibili interruzioni del pacchetto superiori al tempo intercarattere 
+ (La specifica ModBus dice almeno 3.5 volte la lunghezza di un carattere).
+  del dispositivo ricevente (vedi Touch EXOR e pannellino Netbuilding) che generava in qesti casi dei timeout di comunicazione. 
+- Aumentata pausa tra un messaggio e il successivo nel protocollo Modbus da 2 a 5mS per rispettare quanto dice la specifica del protocollo. 
+  (Mentre la pausa intercarattere minima deve essere almeno 3.5 volte le lunghezza di un byte e dipende quindi la BaudRate. 
+  Comunque dopo la modifica sopre descritta della trasmissione sotto interrupt dovremmo essere a posto.)
+  
+Rev. 8.22.84 17/10/2017 
+- Inserite alcune modifiche per gestione Pannelli NetBuilding (mod.MCT4KWT)
+
+Rev. 8.22.83 14/09/2017 
+- Inserito controllo temperatura media su funzionamento split generale da FW Selection ("K_Mid_SlaveSec_Temp_Amb_Function"). 
+  Unificato con controllo velocità media.
+
+Rev. 8.21.82 12/09/2017 
+- Sistemato baco visualizzazione velocità ventola modbus con modalità split==3 (Only Fan).
+
+Rev. 8.21.81 08/09/2017 
+- Aumentata velocità di chiusura valvola in EngineBox_Freddo. (Core.c riga 1259) da 2 a 10 passi.
+
+Rev. 8.21.80 23/08/2017 
+- Aggiunta gestione errori di comunicazione con accensione LED rosso (se i vari counter errori superano la soglia di "K_MaxCommErrorAlarm" viene acceso il LED Rosso e resettato ogni 20sec.)
+- Aggiunti define "LED_ON" e "LED_OFF" per un piu agevole settaggio del pilotaggio LED (inversione HW 0=Acceso 1=Spento)
+
+Rev. 8.21.79 26/07/2017 
+- Modificata routine "ControlloVentil()" (PWM.C) per migliorare l'intervento dell'allarme FAN Stuck ed evitare falsi allarmi.
+- Ripristinato controllo "PowerManager" (ProtocolloModBus.c riga 640) erroneamente disabilitato nelle versioni precedenti.
+
+Rev. 8.21.78 21/07/2017 
+- Aggiunta gestione flag "PermanentOffline" per comunicazioni con Touch. 
+  Ora l'invio dell'"InitTouch" viene effettuato solo dopo che lo slave non riesce piu a parlare con il Touch per "k_MAX_Cnt_Err_Touch" volte (PermanentOffline==1).
+- Aumentato valore counter "REG_TOUCH_COUNTER_COMUNICATION", da 3 a 10 per avere piu margine n caso di timeout comunicazionicon touch prima di tornare su pagina bianca. 
+- Aggiunta routine "InitADConversion()" in main.c in init() prima delle inizializzazione delle comunicazioni per risolvere un problema sul master che faceva accendere i rele pompe durante la fase di attesa dello slave (prima di entrare nel mainLoop.
+
+
+Rev. 8.20.75 29/06/2017 
+- Sistemato baco di aggiornamento tempo ripartenza dopo blackout. inserito in pagina 9 per touch con più box.
+- Aggiunto "SplitMode" 254 = Solo Comunicazione Touch.
+
+
+Rev. 8.20.74 12/05/2017 
+- Sistemata routine "Hw_Test()" per gestire anche segnale tacho ventilatore e segnalare eventuale anomalia rilevamento velocita.
+
+Rev. 8.20.73 05/05/2017 
+- Aggiunto define "MaxExcursionValve" per gestione visualizzazione corretta percentuale di pilotaggio valvola su touch.
+
+Rev. 8.20.72 20/04/2017 beta10
+- Implementato cambio BaudRate MyBUS: LowSpeed=57600Baud, HiSpeed=115000Baud
+
+Rev. 8.20.72 18/04/2017 beta8
+- 
+
+Rev. 8.20.72 06/04/2017 beta7
+- Resi i SubSlave indipendenti
+
+Rev. 8.20.72 06/04/2017 beta6 - Test Valvola
+- Predisposta gestione della riduzione della corrente del driver valvola attraverso I/O "RE4" che pone in parallelo a
+  R62 una resistenza da 715 Ohm per diminuirla da 450mA a circa 100mA come da suggerimento Carel.
+
+Rev. 8.20.72 06/04/2017 beta5 - Test Valvola
+- Prova per gestire in PWM la corrente di bias del driver in condizioni di NON pilotaggio in modo da portare 
+  il valore efficace della corrente (impostato a 444mA) a 100mA come da specifica Carel.
+  La tecnica funziona ma il rumore della corrente in PWM (250Hz) generato è inaccettabile.
+  TECNICA ABORTITA e NON UTILIZZABILE.
+
+Rev. 8.20.72 06/04/2017 beta4 - Test Valvola
+- Modificata gestione pilotaggio valvola in 16 microstep come Carel:
+- Aggiunta gestione "ReSync" valvola quando in posizione tutta chiusa:
+  Ora quando "Me.ExpValve_Act" == "Me.ExpValve_Req" viene eseguito un reset di 20 passi in chiusura ogni 10sec.
+  per garantire la chiusura ed evitare "sfiati" del GAS.  
+
+Rev. 8.20.72 06/04/2017 beta4
+- Aggiunta gestione Modbus per Inverter ventola
+Rev. 8.20.72 05/04/2017 beta3
+- Inserite modifiche per gestione UTA.
+- Ora lo slave funziona anche senza touch collegato. Viene gestito dallo slave Master.
+Rev. 8.20.72 04/04/2017 beta2
+- Implementato calcolo SuperHeat Dinamico
+Rev. 8.20.72 04/04/2017 beta1
+- Implementate modifiche su Touch e comunicazioni come su versioni "Frigo"
+
+Rev. 8.19.71 03/04/2017
+- Ricevuti 2 comandi nuovi (REG_SPLIT_WR_MIN_PRESS_COOL e REG_SPLIT_WR_MIN_PRESS_HEAT) per ricezione valori minimi di ser temperatura di evaporazione. Inviati anche a SubSlave in broadcast.
+Rev. 8.18.70 21/03/2017
+- Aggiunti comandi MyBUS per ricezione dati Volt e Current Inverter per visualizzazione grafici su touch.
+Rev. 8.17.69 11/02/2017
+- Aggiunta visualizzazione su Touch del tempo rimanente prima del ripristino delle funzionalità dopo blackout inviato dal Master.
+- Aggiunta gestione allarme "mancanza comunicazione con Master" e relativa visualizzazione su touch.
+- Aggiunti nuovi comandi MyBUS per la lettura e la ricezione dei flags da Master (OnLine, OffLine, Alarm e Enable).
+- Aggiunti comandi Touch per l'inizializzazione dei registri INIT verso gli slave.
+Rev. 8.16.68 31/01/2017
+- Inserita pausa 2mS in funzione "Send_WriteModReg" (ProtocolloModBus.c) per eliminare anomalie di risposta del touch (Gia fatto in routine di lettura alcune versioni fa).
+- Inseriti registri di Diagnostica SuperHeat.
+- Aggiunto "Return 0" mancante in comando "REG_SPLIT_ENGINE_BOX_WATER_PUMP_SPEED_PERC" (ProtocolloComunicazione.c)
+- Aggiunte ottimizzazioni di gestione valvola e ridefiniti relativi valori di regolazione (define) in modo da poterli facilmente scalarli in %.
+- Sistemato controllo valvola in collaudo ora fa 5 secondi aperta e 50 chiusa. Aggiunta comunicazione con master per temperature.
+Rev. 8.16.67 14/11/2016
+- Modificata gestione valvola sotto interrupt cosi da evitare "congelamenti" del ciclo e quindi ache di aggiornamento del Touch durante ampie escursioni repentine 
+della posizione della valvola.
+- Sistemato baco (in piu punti di Core.c) dichiarazione non inizializzata della variabile "RealFuncMode".
+Rev. 8.16.66 11/11/2016
+- Corretto baco di invio dato "Me.EvapTempValve" in raffrescamento. Non veniva trattato e rimaneva sempre l'ultimo visualizzato in riscaldamento.
+- Inserita potenza motori in pagina princilape divisa in 2 se double compressor attivo.
+Rev. 8.16.65 06/11/2016
+- Aggiunto reinit valvola (tutta chiusa) per riallineare la posizione di zero (eventualmente fuori sincro) durante la fase di "CoreOff" o "EngineBoxOff". (Core.c)
+Rev. 8.16.64 27/10/2016
+- Inserito define per escludere freno ventola (K_FanBrake_DeltaTempInOut & K_FanBrake_DeltaTempReqOut).
+Rev. 8.16.63 05/10/2016
+- Aumentata velocità di regolazione ventola del quadruplo.
+  Ora per arrivare alla velocità massima (Me.Pwm_Value=255 -> K_FanSpeed7) ci impiega circa 1min. contro i 4 di prima.
+Rev. 8.16.62 05/10/2016
+- Sistemato baco che faceva fermare la ventilazione su tutti gli slave (quando in modo "Ventilazione") se entrambe gli inverter erano guasti.
+- Sistemato baco nel caricamento del limite LO di "Fanmode" (era "Ventil_Off->0") ora è "Ventil_Night->1"
+- Aggiunto invio al Touch del valore del registro "REG_TOUCH_I_AM_MASTER_SPLIT" per inizializzare la versione corretta sul Touch (MasterTouch o cabine).
+Rev. 8.16.61 22/09/2016
+- Modificata gestione ricezione setpoint "SuperHeat" e "WorkPressure Caldo e Freddo" e "K_PerformanceLossBattery" da master: Ora se il master non invia il valore di setpoint lo slave si tiene quello impostato da define ("K_SetPoint", "Freddo_TempBatt_MaxPwr, "Caldo_TempBatt_MaxPwr")
+- Aggiunto invio SetPoint "SuperHeat", "WorkPressure Caldo e Freddo" e "K_PerformanceLossBattery" verso SubSlaves.
+- Corretto baco locazione E2prom ("E2_SPLIT_Uta_SP_Room_F_Hi/Lo" e "E2_SPLIT_ECOMODEEN_Hi/lo" condividevano le stesse locazioni (0xEB e 0xEC).
+Rev. 8.16.60 19/09/2016
+- Aggiunta possibilità di selezionare (FWSelection.h) la provenienza del valore della Pressione di Lavoro (sia per Caldo che per Freddo) o da Slave (come è ora) o da Master.
+Rev. 8.16.59 19/09/2016
+- Aggiunta possibilità di selezionare (FWSelection.h) la provenienza del valore di "SuperHeat" o da Slave (come è ora) o da Master.
+- Aggiunto comando MyBus per ricevere il valore di SuperHeat da Master.
+Rev. 8.16.58 19/08/2016
+- Unificato range acquisizione canali pressione a 45Bar. (main.c)
+- Aggiunta routine (CheckValueRange()) per controllo limiti valori caricati da EEPROM. (questo per evitare problemi durante aggiornamenti di FW che caricano a volte valori corrotti da EEPROM).
+- Corretto baco in EEPROM.c (LoadE2_TouchValue()) che NON aggiornava per errore la variabile "Touch[0].SystemDisable".
+Rev. 8.16.57 10/08/2016
+- Implementato comando MyBus "AUTO_RESET_BOARD" per resettare la scheda e poter programmare FW con Bootloader (DS30).
+- Modificato limite escursione valvola in "Hw_Test()" per il collaudo delle schede (main.c).
+Rev. 8.15.56 05/08/2016
+- Sistemato baco che fermava la ventilazione Split a SetPoint raggiunto, se (in modalità DoubleCompressor) uno dei due compressori andava in errore.
+- Aggiornato e testata visualizzazione temperatura e setpoint in Farheneit.
+Rev. 8.15.55 28/07/2016
+- Aggiunto nuovo dato inviato su Touch relativo alla % della pompa acqua. (Creata di conseguenza nuova versione Touch 1.15.4)
+- Aggiunto setup posizione valvola su perdita di comunicazione con Master: Se Raffrescamento valvola = 0% se Riscaldamento valvola 1%.
+Rev. 8.14.54 28/07/2016
+- Aggiunta reinizializzazione dati Touch a caldo su eventuale ricollegamento o riprogrammazione FW.
+Rev. 8.14.53 14/07/2016
+- Aggiunto salvataggio in EEPROM del flag "Touch[0].SystemDisable" e relativo caricamento alla partenza.
+
+Rev. 8.14.52 11/07/2016
+- Implementate modifiche per gestione scritture dati su Panel NetBuilding (SetPoint, FanMode, Mode, Pwr)
+- Aggiunto comando Modbus per scrittura "Single Coil" (WriteModCoil -> 4) per abilitare scritture parametri su pannellino NetBuilding.
+Rev. 8.14.51 11/07/2016
+- In "ProtocolloComunicazione.c" eliminata eccezione in comando "REG_SPLIT_SYSTEM_DISABLE" per far spegnere anche split master con "System Disable" da Touch
+- In "Core.c" (Regolavalvola()) sistemato baco che con errori "EngineBox.Error.CompressorHi, EngineBox.Error.CompressorHi_C2, EngineBox.Error.CompressorLo, EngineBox.Error.Pressure_Hi"
+  non bloccava le regolazione della valvola.
+
+Rev. 8.14.48 01/05/2016
+- Diminuito valore define "MaxTouch" (Core.h) da 4 a 1 (numero di touch gestibili).
+- Aggiunta pausa di 2mS in routine "Send_WaitModRx" (ProtocolloModBus.c) per garantire un minimo di distanza tra una Trasmissione e
+  la successiva verso il Touch (sembra che i Touch della Carel non gradiscano comandi troppo ravvicinati).
+- Resi disponibili dati diagnostic split anche in pagina touch 26.
+Rev. 8.14.47 18/04/2016
+- Aggiunti comandi MODBus verso Touch per gestire da Split Master il Setup di qualsiasi altro Split
+- Aggiunti comandi MyBus per lettura da Master dei registri dedicati al setup degli split da parte dello split Master
+Rev. 8.13.46 16/04/2016
+- 
+Rev. 8.13.45 15/04/2016
+- Corretto baco chiamata routine per calcolo checksum in passaggio parametro registro CRC che veniva passato non come puntatore erroneamente. 
+  Poteva provocare eventuali overrun di scrittura su variabili a random.
+- Coretto baco che non faceva più ventilare lo split quando in off per mala gestione del trigger di allarme in cast bit.
+Rev. 8.13.44 11/04/2016
+- 
+Rev. 8.12.43 10/04/2016
+- Integrata logica per gestione Cockpit (escludibile con apposito define "K_CockpitEnable")
+- Sistemata logica di gestione valvola.
+- Ritoccati valori di timeout e numero tentativi di comunicazione protocollo MODBUS
+- Diminuito timeout intercarattere MOdBus da 100mS a 10mS (controllare specifica MOdbus a riguardo... dovrebbe essere 5mS)
+
+Rev. 8.12.42 06/04/2016
+- Inseriti nuovi comandi BUS per ricezione dati da master split_master di settaggi per taglia inverter e massima potenza 
+  disponibile e assorbimento istantaneo.
+- Inseriti nuovi comandi per scrittura allarmi compressore 2 su touch.
+- Modificata routine di invio dati di diagnostica inverter verso slave_master.
+Rev. 8.11.41 01/04/2016
+- Eliminato filtro su "Me.Evap_Press" in Core.c perchè bisogna sapere subito il valore che richiede lo split al motore.
+- Sistemato conto matematico (in Core.c) su "DeltaMaxEsc" perchè sforava il buffer.
+- Modificati valori minimi limiti (in Core.c) Valvole in funzioni "Decrementa" con split spento (ora la valvola può essere completamente chiusa).
+- Modificati limiti di apertura valvola con split spento. Ora si posiziona sul 20% massimo.
+- Corretta baco in calcolo "RealFunctionMode" dei due compressori.
+Rev. 8.10.40 31/03/2016
+- Aggiunti nuovi comandi Mybus per ricezione dati gestione secondo compressore
+- Aggiunta gestione dei dati provenienti dal BoxMotore se è presente il secondo copressore.
+- Corretto baco in Core.c sulla limitazione della valvola su errore Pressure_Hi (riga circa 770)
+  "Se chiedo un'apertura del x% per errore di alta pressione e l'unità è spenta, correggo al max x%."
+Rev. 8.9.39	23/03/2016
+- Aggiunto nuovo comando MyBUS per ricezione flag allarmi cumulativi Normali e Persistenti dal Master.
+Rev. 8.8.38	09/03/2016
+- Aggiunti/Modificati parametri da e verso Master.
+Rev. 8.7.37	03/03/2016
+- Cambiato compilatore da Microchip C30 v3.31 a XC16 v1.25.
+- Aggiunto nuovo file include "FWSelection.h" dove mettere tutti i flag per abilitare/disabilitare varie parti di FW.
+- Incrementata "Versione_Fw" per via di modifica protocollo MOdbus e Mybus:
+  Aggiunti comandi per invio e visualizzazione versioni FW & HW su Touch (Cambiata anche gestione versini Touch -> 1.7.1) 
+- Sistemata corretta mascheratura del "PortA" per la lettura dell'indirizzo Slave e della selezione Panel NetBuilding.
+- Aggiunta abilitazione codice di test HW (K_DEVELOP==1) se l'indirizzo della scheda è impostato a zero.
+- Sistemato baco di invio pagina init a Touch se selezionato define "K_DEVELOP" in ProtocolloModBus.c (riga 950 circa).
+Rev.8.6.36  10/02/2016  
+- Modificata gestione Abilitazione/Disabilitazione del driver valvola passo passo:
+  Ora il driver viene abilitato al primo passo della valvola e disabilitato dopo un timeout di 60 sec.
+  Questo per garantire di avere una precisione maggiore tra un passo e l'altro senza avere dei probabili 
+  "micro" movimenti dell'albero valvola durante i frequenti spegnimenti della corrente durante la disabilitazione
+  del driver (verificato con motore passo passo tradizionale (motore stampante) con stesse caratteristiche del motore valvola.
+- Sistemati limiti per gestione valvola in routine Incrementa/Decrementa in core.c
+- Aggiunti nuovi comandi MyBus per ricezione parametri di gestione "Errore compressione" da inviare sul Touch.
+- Modificato include "HWSelection.h" per selezionare più facilmente le varie configurazioni HW.
+Rev.8.6.35  13/01/2016  
+- Aggiunto comando "REG_SPLIT_POWER" per invio stato On/Off degli split al master. ("Touch[0].Script_Split_Pwr")
+- Risolto baco che faceva partire per errore il ventilatore dello SubSlave con idirizzo uguale a quello dello Slave IdMaster in fase di spegnimento.
+- Risolto baco che, in fase di spegnimento non faceva ventilare i SubSlave dello Slave Primario che era IdMaster.
+Rev.8.5.34  11/01/2016  
+- Cambiato il nome dell'include "MicroModelSelection.h" in "HWSelection.h" (come già fatto nel FW Master) per farlo diventare 
+il file dei settaggi generici dipendente dall'HW e configurazioni.
+- Sistemato baco in Protocollo MyBUS relativo al sistema di invio di un messaggio in Broadcast:
+  Veniva (chissà perchè...) inviato con "Dest_Add" uguale a "Mitt_Add", che in condizioni di funzionamento normale
+  non pregiudicava le comunicazioni, ma nel caso di invio da uno Split verso uno SubSplit con lo stesso indirizzo dello Split
+  faceva si che lo SubSlit rispondesse anche ai messaggi in Broadcast!
+  Ora l'invio di un messaggio in Broadcast viene fatto con "Dest_Add" uguale a ZERO (come in tutti i protocolli di questo mondo)
+- Aggiunto indirizzo Slave-Primario "k_My_Address_Sub" che viene utilizzato per le comunicazioni con i suoi SubSlave (Addr=254 come se fosse un master).   
+  In questo modo non ci sono problemi ad utilizzare un indirizzo SubSlit uguale a quello dello Slave-Primario.
+- Aggiunto nuovo comando che invia agli SubSlave l'indirizzo dello Slave-Primario.
+- Sistemati "tipi" di variabili passati e ritornati dalla funzione "PressureGasToTempR410A" (Core.c) e relativo prototipo (Core.h)
+- Corretto baco in funzione "PID" che poteva provocare l'overflow dell'uscita. (inseriti controlli e limitazioni uscita da float a int).
+- Risolto potenziale baco nella routine "Filter" (PID.c) nella conversione dei tipi che poteva provocare malfunzionamenti
+con valori di filtraqgio ("nsamples") elevati.
+- Modificato tipo di struct "TypTimer" in volatile per tutti i timer gestiti.
+- Cambiati alcuni parametri di pilotaggio della valvola per ridurne il rumore generato:
+        - Possibilità di scelta tra 1/2 e 1/8 di step con Define "LowStep" 
+		- Velocità di passo "work" da 20mS (1/2) a 8mS (1/8) e di "init" da 10mS (1/2) a 6mS (1/8)
+		- Decay da "FAST" a "SLOW" (riduce il rumore ad alta frequenza della corrente)
+- Aggiunto calcolo offset di temperatura di evaporazione per la gestione della valvola (in base alla batteria ci sarà un offset diverso)
+		e aggiunto per questo anche nuovo comando.
+- Inviate su touch le pressioni del motore sulle pagine di diagnostica dello split.
+
+Rev.8.4.33  08/01/2016  Aggiunta nuova gestione valvola in caldo.  
+Rev.8.4.32  10/10/2015  Come v8.4.31 + sitemate routine di comunicazione su UART1 e UART2 che generavano errori e perdite di moduli sottoslave.
+Rev.8.4.31  07/10/2015  Modifiche di Simone a Piacenza per Gestione Valvola in Caldo
+Rev.8.4.30  02/10/2015  ??
+
+Rev.8.4.29  07/08/2015
+- Corretto baco in "RegolaValvola()" (Core.c): mancava il calcolo dell'errore nella gestione del "CoreCaldo"
+- Corretto baco (Core.c) in gestione alta e bassa pressione.
+Rev.8.4.28	06/08/2015
+- Inseritew modifiche per gestione risorse nuovo HW (v8.2)
+Rev.8.4.27	??/08/2015
+
+Rev.8.4.26	20/08/2015
+- Sistemato baco in "ProtocolloComunicazioneSec" -> CheckModuli_Sec() che evitava la ricerca dello slave con indirizzo
+  uguale allo Slave primario sul bus secondario.  
+
+Rev.8.4.23	17/08/2015
+- Aggiunto conteggio numero eventuali sotto slave presenti sul BUS secondario (Me.Sub_Slave_Quantity)
+Rev.8.4.22	30/07/2015
+- Aggiunto comando lettura indirizzo dello slave in diagnostica su cui effettuare il reset degli allarmi che proviene dal touch dello slave master.
+- Separati reset allarmi da touch (Split, Diagnostic Split e Master)
+- Aggiunte modifiche per poter utilizzare nuovo micro PIC24FJ256GB210 (Con nuovo HW v8.2).
+    La selezione del micro si effettua con il define "GB210" nel file "MicroModelSelection.h"
+- Modificate routine di lettura/scrittura dati Touch ("RefreshTouchOutPut" e "RefreshTouchInPut") : 
+    Ora non si fa piu il case delle pagine ma si scrive e legge sempre tutto.
+- Modificate routine di lettura dati Touch ("RefreshTouchInPut") : 
+    Ora non si fa piu il case delle pagine ma si legge sempre tutto.
+  09/08/15
+- Sistemato baco che impediva reimpostazione setpoint su touch dopo blackout
+- Modificata tempistica di scatto errori persist. di HiPress e LoPress:
+  Ora se scattano 3 volte nell'arco di 5min. vanno in permanente.
+- Sistemato baco su touch che impediva la corretta gestione del tasto di reset degli errori permanenti
+  11/08/15
+- Sistemato baco che in alcuni casi alla rialimentazione del sistema dopo blackout non reinizializzava correttamente
+  tutti i parametri storati in EEPROM sul touch (solo quando lo slave Master si svegliava in ritardo rispetto agli altri slave)
+  Ora c'e' un ritardo piu lungo sullo slave master per permettere algli altri di essere sicuramente prondi a ricevere i parametri 
+  provenienti dal master che sono stati letti dallo slave master (in particolare "DefMode" e "FunctionMode".
+- Aggiunta gestione "SpeedBoost" ventilazione teamporizzata in caso di slave soddisfatto:
+  Quando lo slave raggiunge SP e la ventilazione è in modo Auto, la velocità ventola continua a variare tra Vel.1 e Vel.3 con
+  pausa 3min.(Vel.1) 1min.(Vel.3). Questo torna utile nei casi in cui la sonda aria uscita non è posizionata in modo ottimale e
+  quindi in questo modo di cerca di muovere più aria.
+  Per ora è stata disattivata in attesa di effettuare prove piu approfondite.
+- Eliminati da EEPROM tutti i parametri di lavoro tranne quelli di calibrazione canali A/D.
+- Aggiunta gestione LED Rosso che ora si accende in caso di errore Slave.
+- Differenziato tempo di attesa allo startup: Se Slave Master attende 40 Sec. mentre se Salve normale 50 Sec. per
+  evitare errate sincronizzazione dei dati letti dal Master da Slave Master verso Slave normale.
+- In "ProtocolloModBus.c" in routine "RefreshTouchInPut()" spostata lettura registri pagina Home sempre (fuori dai case)
+  Sistemazione varie delle letture/scritture nelle varie pagine del Touch.
+- In "ProtocolloModBus.c" in routine "RefreshTouchOutPut" aggiunti calcoli dei dati provenienti dall'inverter (in %) e
+  trasformati in valori "Volt" e "Amper" per la visualizzazione sul touch.
+- Aggiunta nella pagine "Power Reduce" la visualizzazione della potenza ridotta in Kw oltre che alla percentuale.
+- Aggiunto calcolo e visualizzazione percentuale valvola aperta su Touch pagine "Split" e "Diagnostic Split"
+- Corretto baco in "PWM.c" in routine "DeltaTempReqOut()" (Calcolo errato in Err.)
+- In "PWM.C" rilevato errato calcolo velocità ventilatore: "Me.Fan_Tacho = TachoTMR *30;"
+  Il calcolo corretto è questo: "Me.Fan_Tacho = TachoTMR/3 * 60;"	
+  infatti il motore del ventilatore genera 3 impulsi ogni giro (vedi datasheet) e quindi il valore del Timer3 che contiene i
+  conteggi delle transizioni del fronte di salita conteggiate in 1Sec. devono essere divise per 3 e moltiplicate per 60 
+  per avere i giri al minuto. 
+  Però per il momento non è stata fatta nessuna correzione per non alterare i riferimenti di velocità abituali che sono
+  sempre stati intorno ai 3400 giri/min (mente al massimo il ventilatore raggiunge i 2200 giri/min (datasheet riporta 1750g/m)
+
+- Corretto baco in void ControlloVentil() (PWM.c) sulla gestione dell'errore "Me.Error.Fan_Fault"
+=================================================================================
+	if(Me.Pwm_Value >= PWMValue[1])
+	{
+		Me.Error.Fan_Fault = (Me.Fan_Tacho == 0);
+		if(Me.Error.Fan_Fault)
+			Me.Pwm_Value = 0;
+	}
+=================================================================================
+- Corretto baco in Core.c (gestione errori) su "Me.Error.BatteriaGhiacciata"
+- Separati flags di reset errori: tra Reset Errori Master, Reset Errori Slave, Reset Errori Slave diagnostica.
+- Aggiunto in Core.c (TempEvaporazione()) la separazione della minima temperatura di aria di uscita richiesta tra SplitMaster e SplitSlave, 
+  ma per il momento lasciata uguale la definizione dei K.
+- Variato il K di riferimento "K_VoltOutMaxInverter" che è utilizzato per il calcolo da percentuale a V o A dei dati 
+  provenienti dall'inverter e da visualizzare sulla diagnostica del Touch: da 200V (come indicato su datasheet) a 238V suggeririto da Mauri.
+
+
+
+
+
+DA AGGIUNGERE E PROVARE (Forse ma forse!!!):
+- in raffrescamento: se la stanza 1 non è in setpoint raggiunto (e solo se NON) nelle stanze dove invece il SP 
+è stato raggiunto devono chiudere completamente le valvole (non troppo velocemente) per 1 minuto.
+dopodiche riportarle al valore di "lavoro" per xx min. e ripetendo questo ciclo fino a che stanza 1 ha SP raggiunto.
+
+
+
+
+Rev.8.4.21	24/07/2015
+- Sistemazione valvola. 
+    - Ora errore hi pressure apre valvola a "K_percErrValvPress" e limite valvola in GoOff cambiato con K differente (K_ValveGoOff).
+    - Creata Define "HalfStep" per selezione controllo valvola a passo intero opure 1/2 passo.
+    - Eliminato fine corsa valvola da E2 e inserito con K fisso.
+    - Aggiunto controllo flag driver foult valvola ed eventuale ripristino automatico con prevenzione perdita passi e conteggio numero fault (x debug)
+
+- Sistemazione Ventilatore (Fan)
+    - Trasportati K da e2 a K fissi per velocità ventole predefinite (vNight, V1, V2, ecc)
+    - Riscritta gestione velocità ventilatore con ottimizzazione lineare per controllo velocità in automatico. per il resto delle velocità il funzionamento è rimasto invariato.
+
+- Aggiunta media su calcolo SuperHeat e interlacciato Superheat valore pressione da raggiungere con valore di pressione istantaneo.
+- Spostata lettura dipswitch e inizializzazione UART in cima a routine INIT nel Main.c.
+
+Rev.8.4.20	12/07/2015
+- Allineamento modifiche varie come su versione "Master 24V - V7.200" (Mabru Marine):
+	- Mascherature su shift >> <<
+	- Cambiati & e | con operatori logici && e || dove serviva
+
+Rev.8.4.19	17/04/2015	<--- ANCORA DA FARE
+- Aggiunto caricamento impostazioni di funzionamneto da Slave Master (Addr=1) se non presente ne Touch ne PannelloNetBuilding
+06/07/2015
+- Aggiunto regolatore PID per regolazione valvola
+- Sostituita tabella conversione Pressione->temperatura con "PressureGasToTempR410A()"
+
+
+Rev.8.4.18	08/04/2015
+- Eseguito merge con versione 3.13 Inghilterra (ottimizzazioni gestione pannellino NetBuilding)
+- Aggiunta gestione memorizzazione impostazioni da Touch su EEPROM e relativo caricamento alla successiva accensione
+  per avere l'ultima situazione allo spegnimento. (Memorizzazione effettuata solo per Touch[0]).
+Rev.8.4.17	21/03/2015
+- Aggiuinto calcolo e ivio su Touch della Frequenza Richiesta Massima Inverter (Max_Req_Freq)
+- Aggiunto invio su touch ore di vita Master
+Rev.8.4.16	10/03/2015
+- Introdotte modifiche per gestione visualizzazione dati unita split su Touch (solo Split master Addr=1)
+- Introdotte modifiche per gestire ricezione e invio verso Touch del tempo di esecuzione della scheda Master e Slave diag
+- Aumentata lunghezza del buffer ModBus da 40 a 80 byte per evitare sforamenti in TX verso Touch in caso di piu di 15 dati da inviare!
+- Modificata inizializzazione pagina touch in routine InitTouch() per evitare "congelamento" pagine non in caso di debug FW
+- Introdotte modifiche per gestire invio dati diagnostici dell' inverter sullo split master
+
+Rev.8.4.15	05/03/2015
+- Introdotta nuova codifica delle versioni FW: h.p.vvv
+  dove h = compatibilità HW, p = compatibilità Protocollo comunicazione, vvv = numero incrementale versione FW 
+- Introdotti registri "REG_TOUCH_TEMP_P" e "REG_TOUCH_TEMP_G" verso Touch per scrittura temperature su touch.
+- Aggiunte routine di conversione A/D per canali pressioni (anche se per ora non usati) "Pressure_Read_34" e "Pressure_Read_45"
+- Abilitato fuses per protezione program memory
+- Aggiunta funzione di linearizzazione sonda PTC in ADC.C (Steinhart).
+
+Rev.13 - Pannelli NetBuilding		03/01/2015
+- Aggiunta gestione pannelli NetBuilding
+- Aggiunta media mobile sull'acquisizione degli ADC
+- In DriverModBus.C Sistemato acquisizione dati modbus su byte meno significativo. sommando il più ed il meno significativo, 
+in alcuni casi il valore FF sovrascriveva la parte più significativa della parola dando dati non coerenti.
+- In DriverModBus.C aggiunto azzeramento "Mod_LastRx.Valid_Data" in funzione "Mod_WriteBus()" perche in alcuni casi questo flag 
+rimaneva NON azzerato dopo una ricezione valida e successivo invio di nuovo comando con la conseguenza che non veniva attesa la risposta.
+(vedi funzione "WaitModRx(int TimeOut_ms)" in ProtocolloModBus.c ("while((TimeOutModPktRx.TimeOut == 0) & (Mod_LastRx.Valid_Data == 0))")
+- Aggiunta mascheratura byte in caso di shift (>>8 e <<8) in "ProtocolloModBus.c", "Driver_ModBus.c", "Driver_Comunicazione.c", 
+"Driver_ComunicazioneSec.c" e "EEPROM.c" per prevenire possibili ricostruzioni int corrotte.
+- 14/01/2015:
+- Riscritta gestioni valvole caldo - freddo.
+
+Rev.12		21/11/2014
+- Modificata gestione valvola in caldo e freddo.
+
+Rev.11		01/11/2014
+- Modificata sequenza di inizializzazione delle periferiche, abilito per primi i pull up dei dip sw, le usart ed
+	i timer, e poi leggo l'indirizzo per avere il port a stabile	
+
+Rev.10		04/08/2014
+- modificata gestionevalvola in caldo
+- Aggiunta chiusura valvola a 30 passi se il box motore è in caldo, per evitare il gas Recovery
+- modificata gestione valvola in freddo
+	- aggiunta modalità di funzionamento che insegue la temp di aria richiesta tra il mid e min valvola
+		se non è l'unica, nel caso apertura @ mid
+- modificata gestione defrost battery, si avvia solo se la modalità di funzinamento dello split è CoreOff
+- modificati parametri defrost battery
+- modificati parametry IceBattery
+
+Rev.9		04/08/2014
+- Rupulito il codice.
+- Aggiunta gestione valvola arrivati a SP con variazione tra 0 e 100 in funzione dell'aria in uscita.
+- Modficati coefficenti della tabella di limitazione della velocità in funzione dell'aria in uscita.
+
+Rev.8		02/08/2014
+- modificata gestione valvole in freddo
+- modificata gestione ventilatori in freddo per facilitare la gestione delle valvole
+
+Rev.7		04/05/2014
+- Corretto Put data i coefficenti del canale grande e piccolo erano invertiti
+- Modificata grafica errori, touch v.11
+- Modificata gestione errori
+- Aggiornato registro split status con lo stato dello split
+- Modificata struttura Box motore
+
+Rev.6		04/05/2014
+- Invertiti canali adc T_Piccolo e T_Grande in accordo con le serigrafie
+- Aggiunta inizializzazione del touch se la pagina corrente è 0
+
+Rev.5		24/04/2014
+- Aggiunta gestione mio protocollo sulla seconda seriale
+- corretto gestione ventil in ventilazione
+
+Rev.4		08/04/2014
+- Aggiunto controllo PWM con contatore HW
+- Modificata curva di evaporazione caldo
+- Modificata gestione modalità, quando arrivo a SP faccio partire lo spegnimento, sia in caldo che in frddo
+- Modificata gestione di selezione automatica della modalità
+- Modificata gestione ventilatore durante le fasi di spegnimento del box motore, se era attiva lascia il
+	ventilatore on
+- Modificata gestione ventilatore durante gli shut down quando arriva in temperatura, se ho impostato una 
+	velocità fissa la mantiene, altrimenti in auto imposta la velocità 1
+- Corretta gestione E2PROM esterna, dopo il comando di scrittura bisogna fare il polling con lo start
+	e la word di configurazione e risponde NACK se è impegnato nel salvataggio dei dati, massimo 10mSec.
+	durante la fase di scrittura ignora qualsiasi altro comando.
+- Corretta driver di gestione e strutture dati per il mio protocollo sulla seconda seriale.
+
+Rev.3		16/03/2014
+- Modificata gestione automatica ventilatori, inserita pausa tra l'aggiornamento delle velocità per dare tempo
+	di stabilizzarsi alla tempertaura e inserita curva temp limite pwm
+- Modificata offset della curva di evaporazione in caldo da 0°C a 10°C
+- Aggiunta gestione power manager lato touch e lato master.
+- Aggiunta gestione clear error.
+- Aggiunta gestione test.
+
+Rev.2		24/02/2014
+- Aggiunti comandi in broadcast
+- Aggiunta scrittura dei parametri del box motore REG_SPLIT_STATUS_BOX_MOTORE
+- Aggiunta gestione velvole e ventilatori al verificarsi degli errori nel box motore
+- Rivisionato funzionamento nelle varie modalità
+- Aggiunte modalità di funzionamento, SlaveCaldo-SlaveFreddo-SlaveVentil(gli viene inpostata una temp di evaporazione da seguire)
+- Aggiunte modalità di funzionamento, ManualCaldo-ManualFreddo-ManualVentile (ogni parametro viene impostato dal bus, 
+	compreso ventilatore e valvola)
+- Aggiunta recovery della seriale 1 sotto l'interrupt TMR1 (ogni mS)
+- Ridotto time out di attesa tra un byte ed il successivo all'interno del pacchetto da 100mS a 10mS
+- Modificata maschera di acquisizione dell'indirizzo da PORT & 0x00FF a PORT & 0x000F, solo 16 indirizzi, e si evitano
+	problemi legati alle saldature
+- Modificata gestione di segnalazione del led err, si attiva durante il caraicamento dei dati da E2, durante l'attesa
+	di avvio del touch, e alla fine dell'inizializzazione, dopo la ricerca dei touch viene controllato l'indirizzo
+	e se è in un range non valido viene acceso il led di errore.
+- Modificata sequenza di inizializzazione, vengono subito settate le direzioni delle porte e attivatop il pin del pwm
+	per limitare gli spunti del ventilatore in accensione e limitare il rumore.
+
+Rev.1		04/01/2014
+- Prima versione

@@ -1,0 +1,19 @@
+build/default/production/_ext/1472/ModbusCAN.o:  \
+../ModbusCAN.c  \
+ ../FWSelection.h  \
+../HWSelection.h  \
+../DefinePeriferiche.h  \
+../Timer.h  \
+ ../usart.h  \
+../Driver_Comunicazione.h  \
+../ProtocolloComunicazione.h  \
+ ../Driver_ModBus.h  \
+../Driver_ModBus_U4.h  \
+../core.h  \
+../ProtocolloModBus.h  \
+ ../ProtocolloModBus_U4.h  \
+../delay.h  \
+../Bridge1DataAddressMap.h  \
+ ../Bridge2DataAddressMap.h  \
+../DAC.h  \
+../ModBusCAN.h 

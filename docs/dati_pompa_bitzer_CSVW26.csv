@@ -1,0 +1,53 @@
+************************************************************
+BITZER Software v6.17.9 rev2773
+(c) 2023, BITZER, Germany. All data subject to change.
+lunedì 16 gennaio 2023 15:51:14
+************************************************************
+
+Compressor Selection: Compact Screw Compressors CS // CSV
+------------------------------------------------------------
+Input Values:
+
+Compressor model;;;CSVH26-200Y
+Refrigerant;;;R134a
+Reference temperature;;;Dew point temp.
+Evaporating SST;;;0 °C
+Condensing SDT;;;50,0 °C
+Liq. subc. (in condenser);;;0 K
+Suct. gas superheat;;;10,00 K
+Useful superheat;;;100%
+Operating mode;;;Standard
+Power supply;;;400V-3-50Hz
+Additional cooling;;;Automatic
+Max. discharge gas temp.;;;110,0 °C
+
+------------------------------------------------------------
+Result
+
+Compressor;;;CSVH26-200Y-40A;;;
+Frequency compressor;;;83,0 %;;
+Cooling capacity;;;300; kW;
+Cooling capacity *;;;300; kW;
+Evaporator capacity;;;300; kW;
+Power input;;;106,3; kW;
+Current (400V);;;173,1; A;
+Voltage range;;;400V;;
+Condenser capacity;;;407; kW;
+COP/EER;;;2,83;;
+COP/EER *;;;2,83;;
+Mass flow LP;;;8005; kg/h;
+Mass flow HP;;;8005; kg/h;
+min. cooling capacity;;;75,3 kW;;
+max. cooling capacity;;;357 kW;;
+Operating mode;;;Standard;;
+Liquid temp.;;;50,0; °C;
+Oil volume flow;;;0,43; m³/h;
+Cooling method;;;--;;
+Discharge gas temp. w/o cooling;;;76,6; °C;
+;;;;;
+
+------------------------------------------------------------
+Tentative Data.
+*According to EN12900 (10K suction gas superheat, 0K liquid subcooling, see tech. data/ notes)
+------------------------------------------------------------
+

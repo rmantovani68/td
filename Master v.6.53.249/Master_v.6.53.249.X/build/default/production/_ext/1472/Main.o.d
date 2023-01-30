@@ -1,0 +1,28 @@
+build/default/production/_ext/1472/Main.o:  \
+../Main.c  \
+../HWSelection.h  \
+ ../ConfigDevice.h  \
+../DefinePeriferiche.h  \
+../FWSelection.h  \
+../EEPROM.h  \
+ ../usart.h  \
+../Timer.h  \
+../ProtocolloComunicazione.h  \
+ ../Driver_Comunicazione.h  \
+../Driver_ModBus.h  \
+../ProtocolloModBus.h  \
+ ../Driver_ModBus_U4.h  \
+../ProtocolloModBus_U4.h  \
+../ADC.h  \
+../DAC.h  \
+ ../Core.h  \
+../delay.h  \
+../I2C.h  \
+../soft_i2c.h  \
+../i2c_LCD_Driver.h  \
+ ../LCD_ScreenInfo.h  \
+../SevenSegDisplay.h  \
+../ServiceComunication.h  \
+ ../PID.h  \
+../Interrupt.h  \
+../ModBusCAN.h 
